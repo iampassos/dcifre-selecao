@@ -114,7 +114,7 @@ async def get_obrigacoes_empresa(cnpj: str, db: db.Session = Depends(db.get_db))
     return {"status": "success", "data": result}
 
 
-@router.post("/{cnpj}", response_model=schemas.SucessResponse, tags=["Obrigações"], description="Adiciona uma obrigação a uma empresa")
+@router.post("/{cnpj}", status_code=201, response_model=schemas.SucessResponse, tags=["Obrigações"], description="Adiciona uma obrigação a uma empresa")
 async def post_obrigacao(data: schemas.ObrigacaoBase, cnpj: str, db: db.Session = Depends(db.get_db)):
     result = add_obrigacao_by_cnpj(db, cnpj, data)
 

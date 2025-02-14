@@ -38,7 +38,7 @@ def add_empresa(db: db.Session, data: schemas.EmpresaBase):
     if result:
         raise HTTPException(status_code=409, detail="Empresa já existe")
 
-    new = models.Empresa(**data.dict())
+    new = models.Empresa(**data.model_dump())
     db.add(new)
     db.commit()
     db.refresh(new)
@@ -53,7 +53,7 @@ def update_empresa(db: db.Session, cnpj: str, data: schemas.EmpresaUpdate):
         if value is None:
             setattr(data, key, getattr(result, key))
 
-    data_dict = data.dict()
+    data_dict = data.model_dump()
     data_dict["cnpj"] = cnpj
 
     db.query(models.Empresa).filter(
@@ -84,7 +84,7 @@ async def get_empresa(cnpj: str, db: db.Session = Depends(db.get_db)):
     return {"status": "success", "data": result}
 
 
-@router.post("/", response_model=schemas.SucessResponse, tags=["Empresas"], description="Cria uma empresa")
+@router.post("/", status_code=201, response_model=schemas.SucessResponse, tags=["Empresas"], description="Cria uma empresa")
 async def post_empresa(data: schemas.EmpresaBase, db: db.Session = Depends(db.get_db)):
     result = add_empresa(db, data)
 
