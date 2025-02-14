@@ -1,6 +1,5 @@
 import sqlalchemy as sqlal
-from sqlalchemy import Column, Integer, String, Text, Enum, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.orm import declarative_base, sessionmaker
 from dotenv import load_dotenv
 import os
 
