@@ -5,7 +5,7 @@ Base = declarative_base()
 
 
 class Empresa(Base):
-    __tablename__ = 'empresa'
+    __tablename__ = "empresa"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     nome = Column(String(255))
@@ -14,15 +14,15 @@ class Empresa(Base):
     email = Column(String(255))
     telefone = Column(String(255))
 
-    obrigacoes = relationship('ObrigacaoAcessoria',
-                              backref='empresa', cascade='all, delete')
+    obrigacoes = relationship("ObrigacaoAcessoria",
+                              backref="empresa", cascade="all, delete")
 
 
 class ObrigacaoAcessoria(Base):
-    __tablename__ = 'obrigacao_acessoria'
+    __tablename__ = "obrigacao_acessoria"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
     nome = Column(Text(), nullable=False)
     periodicidade = Column(
-        Enum('MENSAL', 'TRIMESTRAL', 'ANUAL', name='periodicidade_tipo'), nullable=False)
-    empresa_id = Column(Integer(), ForeignKey('empresa.id'), nullable=False)
+        Enum("MENSAL", "TRIMESTRAL", "ANUAL", name="periodicidade_tipo"), nullable=False)
+    empresa_id = Column(Integer(), ForeignKey("empresa.id"), nullable=False)
