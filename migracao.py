@@ -23,7 +23,7 @@ depends_on: Union[str, Sequence[str], None] = None
 # Não foi especificado qual tipo de migração vocês queriam, então eu assumi
 # que fosse um script simples como esse em alembic.
 # Eu iria fazer o script no SQL puro, mas como ficou ambíguo a questão, decidi que
-# o alembic seria mais provável de ser a resposta correta.
+# o alembic seria mais provável de ser a resposta correta. Acabei fazendo os dois.
 
 
 def upgrade():
