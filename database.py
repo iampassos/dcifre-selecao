@@ -5,7 +5,7 @@ import os
 
 load_dotenv()
 
-engine = sqlal.create_engine(os.getenv('POSTGRESQL_URL'))
+engine = sqlal.create_engine(os.getenv("POSTGRESQL_URL"))
 
 Session = sessionmaker(bind=engine)
 session = Session()
