@@ -1,25 +1,9 @@
 from fastapi import Depends, APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr, constr
-from typing import Optional
 import database as db
+import empresas_schemas as schemas
 import models
 
 router = APIRouter()
-
-
-class EmpresaBase(BaseModel):
-    nome: str
-    cnpj: constr(max_length=14)
-    endereco: str
-    email: EmailStr
-    telefone: str
-
-
-class EmpresaUpdate(BaseModel):
-    nome: Optional[str] = None
-    endereco: Optional[str] = None
-    email: Optional[EmailStr] = None
-    telefone: Optional[str] = None
 
 
 def list_empresas(db: db.Session):
@@ -38,7 +22,17 @@ def list_empresa_by_cnpj(db: db.Session, cnpj: str, error=True):
     return query
 
 
-def add_empresa(db: db.Session, data: EmpresaBase):
+def list_empresa_by_id(db: db.Session, id: int, error=True):
+    query = db.query(models.Empresa).filter(
+        models.Empresa.id == id).first()
+
+    if not query and error:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    return query
+
+
+def add_empresa(db: db.Session, data: schemas.EmpresaBase):
     result = list_empresa_by_cnpj(db, data.cnpj, False)
 
     if result:
@@ -52,7 +46,7 @@ def add_empresa(db: db.Session, data: EmpresaBase):
     return new
 
 
-def update_empresa(db: db.Session, cnpj: str, data: EmpresaUpdate):
+def update_empresa(db: db.Session, cnpj: str, data: schemas.EmpresaUpdate):
     result = list_empresa_by_cnpj(db, cnpj)
 
     for key, value in data.__dict__.items():
@@ -76,35 +70,35 @@ def delete_empresa_by_cnpj(db: db.Session, cnpj: str):
     db.commit()
 
 
-@router.get("/")
+@router.get("/", response_model=schemas.SucessResponseMany, tags=["Empresas"], description="Retorna todas as empresas")
 async def get_empresas(db: db.Session = Depends(db.get_db)):
     result = list_empresas(db)
 
     return {"status": "success", "data": result}
 
 
-@router.get("/{cnpj}")
+@router.get("/{cnpj}", response_model=schemas.SucessResponse, tags=["Empresas"], description="Retorna apenas uma empresa")
 async def get_empresa(cnpj: str, db: db.Session = Depends(db.get_db)):
     result = list_empresa_by_cnpj(db, cnpj)
 
     return {"status": "success", "data": result}
 
 
-@router.post("/")
-async def post_empresa(data: EmpresaBase, db: db.Session = Depends(db.get_db)):
+@router.post("/", response_model=schemas.SucessResponse, tags=["Empresas"], description="Cria uma empresa")
+async def post_empresa(data: schemas.EmpresaBase, db: db.Session = Depends(db.get_db)):
     result = add_empresa(db, data)
 
     return {"status": "success", "data": result}
 
 
-@router.patch("/{cnpj}")
-async def patch_empresa(data: EmpresaUpdate, cnpj: str, db: db.Session = Depends(db.get_db)):
+@router.patch("/{cnpj}", response_model=schemas.SucessResponse, tags=["Empresas"], description="Altera algum dado de uma empresa")
+async def patch_empresa(data: schemas.EmpresaUpdate, cnpj: str, db: db.Session = Depends(db.get_db)):
     result = update_empresa(db, cnpj, data)
 
     return {"status": "success", "data": result}
 
 
-@router.delete("/{cnpj}")
+@router.delete("/{cnpj}", response_model=schemas.SucessResponseDelete, tags=["Empresas"], description="Deleta uma empresa")
 async def delete_empresa(cnpj: str, db: db.Session = Depends(db.get_db)):
     delete_empresa_by_cnpj(db, cnpj)
 

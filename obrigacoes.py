@@ -1,29 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional
-from enum import Enum
 import database as db
+import obrigacoes_schemas as schemas
 import empresas
 import models
 
 
 router = APIRouter()
-
-
-class PeriodicidadeEnum(str, Enum):
-    MENSAL = "MENSAL"
-    TRIMESTRAL = "TRIMESTRAL"
-    ANUAL = "ANUAL"
-
-
-class ObrigacaoBase(BaseModel):
-    nome: str
-    periodicidade: PeriodicidadeEnum
-
-
-class ObrigacaoUpdate(BaseModel):
-    nome: Optional[str] = None
-    periodicidade: Optional[PeriodicidadeEnum] = None
 
 
 def list_obrigacao_by_id(db: db.Session, id: int):
@@ -70,7 +52,18 @@ def list_obrigacoes_by_cnpj(db: db.Session, cnpj: str):
     return {**empresa[0], "obrigacoes": obrigacoes}
 
 
-def add_obrigacao_by_cnpj(db: db.Session, cnpj: str, data: ObrigacaoBase):
+def list_obrigacao(db: db.Session, cnpj: str, id: int):
+    empresa = empresas.list_empresa_by_cnpj(db, cnpj)
+    obrigacao = list_obrigacao_by_id(db, id)
+
+    if empresa.id != obrigacao.empresa_id:
+        raise HTTPException(
+            status_code=404, detail="Obrigaçã̇o acessória não encontrada")
+
+    return obrigacao
+
+
+def add_obrigacao_by_cnpj(db: db.Session, cnpj: str, data: schemas.ObrigacaoBase):
     result = empresas.list_empresa_by_cnpj(db, cnpj)
 
     data_dict = data.dict()
@@ -81,12 +74,12 @@ def add_obrigacao_by_cnpj(db: db.Session, cnpj: str, data: ObrigacaoBase):
     db.commit()
     db.refresh(new)
 
-    result = list_obrigacoes_by_cnpj(db, cnpj)
+    result = list_obrigacao_by_id(db, new.id)
 
     return result
 
 
-def update_obrigacao(db: db.Session, id: int, data: ObrigacaoUpdate):
+def update_obrigacao(db: db.Session, id: int, data: schemas.ObrigacaoUpdate):
     result = list_obrigacao_by_id(db, id)
 
     for key, value in data.__dict__.items():
@@ -111,28 +104,35 @@ def delete_obrigacao_by_id(db: db.Session, id: int):
     db.commit()
 
 
-@router.get("/{cnpj}")
-async def get_obrigacoes(cnpj: str, db: db.Session = Depends(db.get_db)):
+@router.get("/{cnpj}/{id}", response_model=schemas.SucessResponse, tags=["Obrigações"], description="Retorna uma obrigação de uma empresa")
+async def get_obrigacao(cnpj: str, id: int, db: db.Session = Depends(db.get_db)):
+    result = list_obrigacao(db, cnpj, id)
+
+    return {"status": "success", "data": result}
+
+
+@router.get("/{cnpj}", response_model=schemas.SucessResponseMany, tags=["Obrigações"], description="Retorna as obrigações de apenas uma empresa")
+async def get_obrigacoes_empresa(cnpj: str, db: db.Session = Depends(db.get_db)):
     result = list_obrigacoes_by_cnpj(db, cnpj)
 
     return {"status": "success", "data": result}
 
 
-@router.post("/{cnpj}")
-async def post_obrigacao(data: ObrigacaoBase, cnpj: str, db: db.Session = Depends(db.get_db)):
+@router.post("/{cnpj}", response_model=schemas.SucessResponse, tags=["Obrigações"], description="Adiciona uma obrigação a uma empresa")
+async def post_obrigacao(data: schemas.ObrigacaoBase, cnpj: str, db: db.Session = Depends(db.get_db)):
     result = add_obrigacao_by_cnpj(db, cnpj, data)
 
     return {"status": "success", "data": result}
 
 
-@router.patch("/{id}")
-async def patch_obrigacao(data: ObrigacaoUpdate, id: int, db: db.Session = Depends(db.get_db)):
+@router.patch("/{id}", response_model=schemas.SucessResponse, tags=["Obrigações"], description="Altera um dado de uma obrigação")
+async def patch_obrigacao(data: schemas.ObrigacaoUpdate, id: int, db: db.Session = Depends(db.get_db)):
     result = update_obrigacao(db, id, data)
 
     return {"status": "success", "data": result}
 
 
-@router.delete("/{id}")
+@router.delete("/{id}", response_model=schemas.SucessResponseDelete, tags=["Obrigações"], description="Deleta uma obrigação de uma empresa")
 async def delete_obrigacao(id: int, db: db.Session = Depends(db.get_db)):
     delete_obrigacao_by_id(db, id)
 
