@@ -3,6 +3,7 @@ API Simples para a seleção do estágio.
 Não foi especificado qual biblioteca utilizar para os testes, então decidi usar o pytest.
 Também  não foi especificado qual biblioteca para a migração, então fiz tanto o sql puro quanto
 a biblioteca alembic.
+Utilizei a biblioteca uvicorn para rodar o servidor. http://localhost:8000/docs contém os docs em swagger
 
 OBS: migracao.py é uma alteração do arquivo gerado pelo alembic em uma subpasta
 
