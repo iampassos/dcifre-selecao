@@ -20,6 +20,7 @@ class Empresa(Base):
 
 class ObrigacaoAcessoria(Base):
     __tablename__ = 'obrigacao_acessoria'
+
     id = Column(Integer(), primary_key=True, autoincrement=True)
     nome = Column(Text(), nullable=False)
     periodicidade = Column(

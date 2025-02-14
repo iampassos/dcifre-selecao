@@ -12,8 +12,6 @@ def list_obrigacao_by_id(db: db.Session, id: int):
     query = db.query(models.ObrigacaoAcessoria).filter(
         models.ObrigacaoAcessoria.id == id).first()
 
-    print(query)
-
     if not query:
         raise HTTPException(
             status_code=404, detail="Obrigação acessória não encontrada")
@@ -31,8 +29,6 @@ def list_obrigacoes_by_cnpj(db: db.Session, cnpj: str):
         models.ObrigacaoAcessoria,
         models.Empresa.id == models.ObrigacaoAcessoria.empresa_id
     ).filter(models.Empresa.cnpj == cnpj).all()
-
-    print(query)
 
     if len(query) == 0:
         raise HTTPException(
