@@ -4,6 +4,8 @@ Não foi especificado qual biblioteca utilizar para os testes, então decidi usa
 Também  não foi especificado qual biblioteca para a migração, então fiz tanto o sql puro quanto
 a biblioteca alembic.
 
+OBS: migracao.py é uma alteração do arquivo gerado pelo alembic em uma subpasta
+
 PASSO A PASSO:
 1. [X] Modelar o banco de dados no sql puro
 2. [X] Criar todas as queries no sql puro
