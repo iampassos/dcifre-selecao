@@ -28,18 +28,18 @@ def list_empresas(db: db.Session):
     return query
 
 
-def list_empresa_by_cnpj(db: db.Session, cnpj: str):
+def list_empresa_by_cnpj(db: db.Session, cnpj: str, error=True):
     query = db.query(models.Empresa).filter(
         models.Empresa.cnpj == cnpj).first()
 
-    if not query:
+    if not query and error:
         raise HTTPException(status_code=404, detail="Empresa não encontrada")
 
     return query
 
 
 def add_empresa(db: db.Session, data: EmpresaBase):
-    result = list_empresa_by_cnpj(db, data.cnpj)
+    result = list_empresa_by_cnpj(db, data.cnpj, False)
 
     if result:
         raise HTTPException(status_code=409, detail="Empresa já existe")
