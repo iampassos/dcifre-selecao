@@ -1,0 +1,139 @@
+from fastapi import Depends, APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+from enum import Enum
+import database as db
+import empresas
+import models
+
+
+router = APIRouter()
+
+
+class PeriodicidadeEnum(str, Enum):
+    MENSAL = "MENSAL"
+    TRIMESTRAL = "TRIMESTRAL"
+    ANUAL = "ANUAL"
+
+
+class ObrigacaoBase(BaseModel):
+    nome: str
+    periodicidade: PeriodicidadeEnum
+
+
+class ObrigacaoUpdate(BaseModel):
+    nome: Optional[str] = None
+    periodicidade: Optional[PeriodicidadeEnum] = None
+
+
+def list_obrigacao_by_id(db: db.Session, id: int):
+    query = db.query(models.ObrigacaoAcessoria).filter(
+        models.ObrigacaoAcessoria.id == id).first()
+
+    print(query)
+
+    if not query:
+        raise HTTPException(
+            status_code=404, detail="Obrigação acessória não encontrada")
+
+    return query
+
+
+def list_obrigacoes_by_cnpj(db: db.Session, cnpj: str):
+    empresas.list_empresa_by_cnpj(db, cnpj)
+
+    query = db.query(
+        models.Empresa,
+        models.ObrigacaoAcessoria
+    ).join(
+        models.ObrigacaoAcessoria,
+        models.Empresa.id == models.ObrigacaoAcessoria.empresa_id
+    ).filter(models.Empresa.cnpj == cnpj).all()
+
+    print(query)
+
+    if len(query) == 0:
+        raise HTTPException(
+            status_code=404, detail="Obrigações acessórias não encontradas")
+
+    empresa = []
+    obrigacoes = []
+
+    for row in query:
+        if len(empresa) == 0:
+            empresa_dict = row.Empresa.__dict__
+            empresa.append(empresa_dict)
+
+        obrigacao_dict = row.ObrigacaoAcessoria.__dict__
+        obrigacoes.append(obrigacao_dict)
+
+    return {**empresa[0], "obrigacoes": obrigacoes}
+
+
+def add_obrigacao_by_cnpj(db: db.Session, cnpj: str, data: ObrigacaoBase):
+    result = empresas.list_empresa_by_cnpj(db, cnpj)
+
+    data_dict = data.dict()
+    data_dict["empresa_id"] = result.id
+
+    new = models.ObrigacaoAcessoria(**data_dict)
+    db.add(new)
+    db.commit()
+    db.refresh(new)
+
+    result = list_obrigacoes_by_cnpj(db, cnpj)
+
+    return result
+
+
+def update_obrigacao(db: db.Session, id: int, data: ObrigacaoUpdate):
+    result = list_obrigacao_by_id(db, id)
+
+    for key, value in data.__dict__.items():
+        if value is None:
+            setattr(data, key, getattr(result, key))
+
+    data_dict = data.dict()
+    data_dict["id"] = id
+    data_dict["empresa_id"] = result.empresa_id
+
+    db.query(models.ObrigacaoAcessoria).filter(
+        models.ObrigacaoAcessoria.id == id).update(data_dict)
+    db.commit()
+
+    return list_obrigacao_by_id(db, id)
+
+
+def delete_obrigacao_by_id(db: db.Session, id: int):
+    result = list_obrigacao_by_id(db, id)
+
+    db.delete(result)
+    db.commit()
+
+
+@router.get("/{cnpj}")
+async def get_obrigacoes(cnpj: str, db: db.Session = Depends(db.get_db)):
+    result = list_obrigacoes_by_cnpj(db, cnpj)
+
+    return {"status": "success", "data": result}
+
+
+@router.post("/{cnpj}")
+async def post_obrigacao(data: ObrigacaoBase, cnpj: str, db: db.Session = Depends(db.get_db)):
+    result = add_obrigacao_by_cnpj(db, cnpj, data)
+
+    return {"status": "success", "data": result}
+
+
+@router.patch("/{id}")
+async def patch_obrigacao(data: ObrigacaoUpdate, id: int, db: db.Session = Depends(db.get_db)):
+    result = update_obrigacao(db, id, data)
+
+    return {"status": "success", "data": result}
+
+
+@router.delete("/{id}")
+async def delete_obrigacao(id: int, db: db.Session = Depends(db.get_db)):
+    delete_obrigacao_by_id(db, id)
+
+    return {"status": "success", "data": None}
